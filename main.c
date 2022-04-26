@@ -174,6 +174,17 @@ int main(int argc, char **argv) {
 
   testBackward(rev, correctLength, exemplary);
 
+  // Verify that neither of the lists share identical cons cells
+  Value *headcur = head;
+  while (headcur->type != NULL_TYPE) {
+    Value *revcur = rev;
+    while (revcur->type != NULL_TYPE) {
+      assert(headcur != revcur);
+      revcur = revcur->c.cdr;
+    }
+    headcur = headcur->c.cdr;
+  }
+
   if (exemplary) {
     printf(" -=- EMPTY LIST -=- \n");
     Value *emptyList = makeNull();
