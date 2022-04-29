@@ -21,17 +21,19 @@ void *talloc(size_t size){
 
 // Free all pointers allocated by talloc, as well as whatever memory you
 // allocated in lists to hold those pointers.
-void tfree();
-    Value* cur = list;
-    while (!isNull(listHead)){
-        Value *next = listHead.next;
-        free(list);
+void tfree(){
+    Value* cur = listHead;
+    while (!isNull(cur)){
+        Value *next = cur.next;
+        free(cur);
         cur = next;
     }
     free(cur);
+}
 
 // Replacement for the C function "exit", that consists of two lines: it calls
 // tfree before calling exit.
-void texit(int status);
+void texit(int status){
     tfree();
-    exit();
+    exit(1);
+}
