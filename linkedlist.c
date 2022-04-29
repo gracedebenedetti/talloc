@@ -20,7 +20,8 @@ Value *makeNull(){
 Value *cons(Value *newCar, Value *newCdr){
     Value *consVal = (Value *)talloc(sizeof(Value));
     consVal->type = CONS_TYPE;
-    consVal->c = (struct ConsCell){.car = newCar, .cdr = newCdr};
+    consVal->c.car = newCar;
+    consVal->c.cdr = newCdr;
     return consVal;
 }
 
@@ -74,14 +75,14 @@ Value *reverse(Value *list){
     Value* newHead = cons(car(cur), tempNull);
     Value* newTail = newHead; // [2] Eventually this gets assigned to the null node at the end
     cur = cdr(cur);
-    while(cur->type != NULL_TYPE)
+    while(cur->type != NULL_TYPE && cur != NULL)
     {
         Value* newConsCell = cons(car(cur), newHead);
         newHead = newConsCell;
         cur = cdr(cur);
     }
     newTail->c.cdr = cur; // This is what we described in comment [2]
-    free(tempNull); // This is what we described in comment [1]
+    //free(tempNull); // This is what we described in comment [1]
     return newHead;
 }
 

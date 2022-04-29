@@ -17,72 +17,48 @@
 // which can then be used as normal.
 //
 // This is confusing af so just give me a call if you're confused
-Value listHead = (Value){.type = CONS_TYPE, .c = (struct ConsCell){.car = NULL, .cdr = NULL}};
+Value* listHead;
 
-
-// Returns a pointer to the next item in the list of Values
-Value* nextVal(Value* list){
-    assert(list->type == CONS_TYPE); // must be a cons type
-    return list->c.cdr;
-}
-
-// Returns a new NULL_TYPE node.
-// Remember to free any nullNode's we create!
-Value* nullNode()
-{
-    Value* newNullNode = (Value*)malloc(sizeof(Value));
-    newNullNode->type = NULL_TYPE;
-    return newNullNode;
-}
 
 // Replacement for malloc that stores the pointers allocated.
 void *talloc(size_t size){
+    if (listHead == NULL)
+    {
+        Value* newNullNode = (Value*)malloc(sizeof(Value));
+        newNullNode->type = NULL_TYPE;
+        listHead = newNullNode;
+    }
+    Value* newPtrNode = (Value*)malloc(sizeof(Value));
+    newPtrNode->type = PTR_TYPE;
     void* newPtr = malloc(size); // This is the new pointer being malloc'd by the user
+    newPtrNode->p = newPtr; // assigns the pointer to the new PTR_TYPE node
 
     Value* newConsNode = (Value*)malloc(sizeof(Value));
     newConsNode->type = CONS_TYPE;
 
-    Value* newPtrNode = (Value*)malloc(sizeof(Value));
-    newPtrNode->type = PTR_TYPE;
-
-    newPtrNode->p = newPtr; // assigns the pointer to the new PTR_TYPE node
-
-    newConsNode->c.car = newPtrNode; // assigns the new PTR_TYPE node to the car of the new CONS_TYPE node
-
-    if (listHead.c.cdr != NULL) // if list is nonempty, add to list.
-    {
-        newConsNode->c.cdr = listHead.c.cdr;
-        listHead.c.cdr = newConsNode;
-    } else // if list is empty, add to the listHead.
-    {
-        newConsNode->c.cdr = nullNode();
-        listHead.c.cdr = newConsNode;
-    }
+    newConsNode->c.car = newPtrNode;
+    newConsNode->c.cdr = listHead;
+    listHead = newConsNode;
     return newPtr;
 }
 
 // Free all pointers allocated by talloc, as well as whatever memory you
 // allocated in lists to hold those pointerse.
 void tfree(){
-    Value* headPtr;
-    if (listHead.c.cdr != NULL) // only need to free memory if the list is nonempty
+    Value* tempPtr = listHead;
+    while (listHead != NULL && listHead->type != NULL_TYPE) // only need to free memory if the list is nonempty
     {
-        headPtr = listHead.c.cdr; // this now points to the head of the list
-        
-        while(headPtr->type != NULL_TYPE)
+        if (listHead->c.car != NULL && listHead->c.car->type == PTR_TYPE)
         {
-            assert(headPtr->type == CONS_TYPE);
-            Value* next = nextVal(headPtr);
-            printf("1\n");
-            assert(headPtr->c.car->type == PTR_TYPE); // the car of the node must be a PTR_TYPE
-            free(headPtr->c.car->p);
-            free(headPtr->c.car);
-            free(headPtr);
-            headPtr = next;
+            free(listHead->c.car->p);
         }
-        free(headPtr);
-        listHead.c.cdr = NULL;
+        free(listHead->c.car);
+        tempPtr = listHead;
+        listHead = listHead->c.cdr;
+        free(tempPtr);
     }
+    free(listHead);
+    listHead = NULL;
 }
 
 // Replacement for the C function "exit", that consists of two lines: it calls
