@@ -6,18 +6,19 @@
 #include <string.h>
 #include "linkedlist.h"
 #include "value.h"
+#include "talloc.h"
 
 
 // Create a new NULL_TYPE value node.
 Value *makeNull(){
-    Value *val = (Value *)malloc(sizeof(Value));
+    Value *val = (Value *)talloc(sizeof(Value));
     val->type = NULL_TYPE;
     return val;
 }
 
 // Create a new CONS_TYPE value node.
 Value *cons(Value *newCar, Value *newCdr){
-    Value *consVal = (Value *)malloc(sizeof(Value));
+    Value *consVal = (Value *)talloc(sizeof(Value));
     consVal->type = CONS_TYPE;
     consVal->c = (struct ConsCell){.car = newCar, .cdr = newCdr};
     return consVal;
@@ -63,57 +64,41 @@ void display(Value *list){
     }
 }
 
-// Return a new list that is the reverse of the one that is passed in. All
-// content within the list should be duplicated; there should be no shared
-// memory whatsoever between the original list and the new one.
+// Return a new list that is the reverse of the one that is passed in. No stored
+// data within the linked list should be duplicated; rather, a new linked list
+// of CONS_TYPE nodes should be created, that point to items in the original
+// list.
 Value *reverse(Value *list){
     Value* cur = list;
-    Value* head = makeNull();
+    Value* tempNull = makeNull(); // [1] This is temporary until we can copy the null from the original list. this will be freed at the end.
+    Value* newHead = cons(car(cur), tempNull);
+    Value* newTail = newHead; // [2] Eventually this gets assigned to the null node at the end
+    cur = cdr(cur);
     while(cur->type != NULL_TYPE)
     {
-        Value* newCar = (Value *)malloc(sizeof(Value));
-        if (car(cur)->type == STR_TYPE)
-        {
-            //newCar = (Value *)malloc(sizeof(Value *));
-            newCar->s = malloc(sizeof(char)*(strlen(car(cur)->s) + 1));
-            strcpy(newCar->s, car(cur)->s);
-            newCar->type = STR_TYPE;
-        } else
-        if (car(cur)->type == INT_TYPE)
-        {
-            //newCar = (Value *)malloc(sizeof(Value *));
-            newCar->i = car(cur)->i;
-            newCar->type = INT_TYPE;
-        } else
-        if (car(cur)->type == DOUBLE_TYPE)
-        {
-            //newCar = (Value *)malloc(sizeof(Value *));
-            newCar->d = car(cur)->d;
-            newCar->type = DOUBLE_TYPE;
-        }
-
-        Value* newConsCell = cons(newCar, head);
-        head = newConsCell;
+        Value* newConsCell = cons(car(cur), newHead);
+        newHead = newConsCell;
         cur = cdr(cur);
     }
-    
-    return head;
+    newTail->c.cdr = cur; // This is what we described in comment [2]
+    free(tempNull); // This is what we described in comment [1]
+    return newHead;
 }
 
-// Frees up all memory directly or indirectly referred to by list. This includes strings.
-void cleanup(Value *list){
-    Value* cur = list;
-    while (!isNull(cur)){
-        Value *next = cdr(cur);
-        if (car(cur)->type == STR_TYPE){
-            free(car(cur)->s);
-        }
-        free(car(cur));
-        free(cur);
-        cur = next;
-    }
-    free(cur);
-}
+// // Frees up all memory directly or indirectly referred to by list. This includes strings.
+// void cleanup(Value *list){
+//     Value* cur = list;
+//     while (!isNull(cur)){
+//         Value *next = cdr(cur);
+//         if (car(cur)->type == STR_TYPE){
+//             free(car(cur)->s);
+//         }
+//         free(car(cur));
+//         free(cur);
+//         cur = next;
+//     }
+//     free(cur);
+// }
 
 // Measure length of list. Use assertions to make sure that this is a legitimate
 // operation.
